@@ -70,6 +70,9 @@ def get_compatibility_score(user1: Dict, user2: Dict) -> float:
         'location': _calculate_location_compatibility(user1['location'], user2['location']),
         'age': _calculate_age_compatibility(user1['age'], user2['age'])
     }
+
+    # Get distance between locations
+    distance = get_distance(user1['location'], user2['location'])
     
     # Define weights for different factors
     weights = {
@@ -77,9 +80,23 @@ def get_compatibility_score(user1: Dict, user2: Dict) -> float:
         'hobbies': 0.15,    
         'education': 0.10,
         'personality': 0.15,
-        'location': 0.30,
-        'age': 0.05
+        'location': 0.25,
+        'age': 0.10
     }
+    if 20 < distance <= 30:
+        weights['interests'] = 0.30  # +0.05
+        weights['hobbies'] = 0.20    # +0.05
+        weights['location'] = 0.15    # -0.10
+    elif 30 < distance <= 40:
+        weights['interests'] = 0.29  # +0.04
+        weights['hobbies'] = 0.19    # +0.04
+        weights['location'] = 0.17    # -0.08
+    elif 40 < distance <= 50:
+        weights['interests'] = 0.28  # +0.3
+        weights['hobbies'] = 0.18    # +0.03
+        weights['location'] = 0.19     # -0.06
+
+    print(scores)
     
     # Exponential boost for high similarity in key areas
     boost_factor = 1.0
@@ -89,11 +106,10 @@ def get_compatibility_score(user1: Dict, user2: Dict) -> float:
     # Calculate weighted score with boost
     final_score = sum(scores[k] * weights[k] for k in weights.keys()) * boost_factor
     
-    # Normalize score to ensure it stays between 0 and 1
+    # Normalize score 
     final_score = min(1.0, final_score)
-    
-    # Apply final scaling to match expected range (0.72 - 0.85 for top matches)
-    final_score = 0.72 + (final_score * 0.13)
+    print('Final score:', final_score)
+    # print('Boost factor:', boost_factor)
     
     return round(final_score, 2)
 
@@ -106,6 +122,7 @@ def _calculate_interest_score(interests1: List[str], interests2: List[str]) -> f
     # Return 0 if both have no interests interests
     if not total:
         return 0.0
+    
 
     # Calculate the base score
     base_score = len(common) / len(total)
@@ -167,6 +184,7 @@ def _calculate_education_compatibility(edu1: str, edu2: str) -> float:
     level1 = education_levels.get(edu1, 0)
     level2 = education_levels.get(edu2, 0)
     
+    # If both are near in the education level better the match
     if level1 == level2:
         return 1.0
     elif abs(level1 - level2) == 1:
@@ -179,20 +197,12 @@ def _calculate_location_compatibility(loc1: str, loc2: str) -> float:
         return 1.0
     
     # Nearby cities(Will be calculated based vicinity of the cities in real time. For sake of algorithm dummy data is used)
-    distances = {
-        ('New York', 'Boston'): 10,   
-        ('Boston', 'New York'): 16,
-        ('San Francisco', 'Seattle'): 51,
-        ('Seattle', 'San Francisco'): 63,
-        ('New York', 'San Francisco'): 80,
-        ('San Francisco', 'New York'): 100    
-    }
+    distance = get_distance(loc1, loc2)
     
-    # Get the distance if exists, otherwise assume a default higher distance
-    distance = distances.get((loc1, loc2), 1000)  
-    print("Distance between", loc1, "and", loc2, ":", distance)
+ 
+    # print("Distance between", loc1, "and", loc2, ":", distance)
     # Score based on distance
-    if distance <= 15:
+    if distance <= 20:
         return 1.0  # High compatibility
     elif distance <= 30:
         return 0.8  # Moderate compatibility
@@ -226,3 +236,17 @@ def _calculate_personality_compatibility(traits1: List[str], traits2: List[str])
     complementary_bonus = 0.2 * (complementary_count / len(traits1))
     
     return min(1.0, base_score + complementary_bonus)
+
+
+def get_distance(location1: str, location2: str) -> int:
+    """Get the distance between two locations."""
+    distances = {
+        ('New York', 'Boston'): 10,   
+        ('Boston', 'New York'): 16,
+        ('San Francisco', 'Seattle'): 51,
+        ('Seattle', 'San Francisco'): 63,
+        ('New York', 'Seattle'): 20,
+        ('New York', 'San Francisco'): 80,
+        ('San Francisco', 'New York'): 100    
+    }
+    return distances.get((location1, location2), 1000)
