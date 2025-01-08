@@ -96,7 +96,9 @@ def get_compatibility_score(user1: Dict, user2: Dict) -> float:
         weights['hobbies'] = 0.18    # +0.03
         weights['location'] = 0.19     # -0.06
 
-    print(scores)
+    print(weights)
+
+    # print(scores)
     
     # Exponential boost for high similarity in key areas
     boost_factor = 1.0
@@ -243,6 +245,7 @@ def get_distance(location1: str, location2: str) -> int:
     distances = {
         ('New York', 'Boston'): 10,   
         ('Boston', 'New York'): 16,
+        ('Boston', 'Chicago'): 30,
         ('San Francisco', 'Seattle'): 51,
         ('Seattle', 'San Francisco'): 63,
         ('New York', 'Seattle'): 20,
